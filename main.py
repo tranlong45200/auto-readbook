@@ -65,14 +65,7 @@ def capture_screenshot():
     # Run adb command to capture a screenshot
     adb_command = 'adb exec-out screencap -p > screenshot.png'
     subprocess.run(adb_command, shell=True)
-
-    print('Bottom sheet image saved successfully.')
-
-
-# def extract_text_from_image(image_path):
-#     # Sử dụng pytesseract để trích xuất văn bản từ ảnh
-#     text = pytesseract.image_to_string(Image.open(image_path))
-#     return text.strip()
+    print('screenshot saved successfully.')
 
 def check_end_of_book(text):
     # Kiểm tra xem văn bản có phải là "Page X of Y" hay không
@@ -94,11 +87,6 @@ def find_text_in_screenshot():
     # Read the screenshot using OpenCV
     screenshot = cv2.imread('screenshot.png')
 
-    # cropped_image = screenshot[100, :]
-    # cv2.imwrite('cropped_screenshot.png', cropped_image)
-    # screenshot2 = cv2.imread('cropped_screenshot.png')
-
-    # Convert the screenshot to grayscale for better text extraction
     gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
 
     cv2.imwrite("gray_image.png", gray)
@@ -112,22 +100,27 @@ def find_text_in_screenshot():
 
     result = check_end_of_book(text.strip())
 
-    print("text fonund "+text+" "+str(result))
+    print("text fonund:"+text+" "+str(result))
     # Check if "100%" is present in the extracted text
     return result
 def is_screen_off_text_100():
     # Implement the logic to check if the screen off text is 100%
     # You may need to run another adb command to get the current state
-    find_text_in_screenshot()
+    return find_text_in_screenshot()
 
 
+def press_back_key():
+    # Run the ADB command to simulate a "back" key press
+    subprocess.run("adb shell input keyevent KEYCODE_BACK", shell=True, check=True)
 def swipe_read_until_100(timeout_seconds=3):
     start_time = time.time()
 
     read=is_screen_off_text_100()
     while not read:
         if read:
-            break
+            print("read done")
+
+            return
 
         else:
             time.sleep(3)  # Adjust the sleep time as needed
@@ -137,17 +130,18 @@ def swipe_read_until_100(timeout_seconds=3):
 
         read = is_screen_off_text_100()
 
-
        # Adjust the sleep time as needed
+
     print("read done")
 
 
 
-# C:\Program Files\Tesseract-OCR
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-# Example usage: Run the swipe_read_until_100 function
-# swipe_read_until_100(timeout_seconds=300)
-# find_text_in_screenshot()
 
-swipe_read_until_100()
+def readBook():
+    swipe_read_until_100()
+    time.sleep(3)
+    press_back_key()
 
+
+readBook()
