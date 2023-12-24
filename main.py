@@ -4,7 +4,7 @@ import re
 import cv2
 import pytesseract
 import subprocess
-
+from PIL import Image
 from showImage import show_gray_image
 
 
@@ -59,7 +59,6 @@ def swipe_read(a_x, a_y, b_x, b_y, duration_ms=500):
 get_screen_size()
 
 
-import time
 
 
 def capture_screenshot():
@@ -67,11 +66,37 @@ def capture_screenshot():
     adb_command = 'adb exec-out screencap -p > screenshot.png'
     subprocess.run(adb_command, shell=True)
 
+    print('Bottom sheet image saved successfully.')
 
+
+# def extract_text_from_image(image_path):
+#     # Sử dụng pytesseract để trích xuất văn bản từ ảnh
+#     text = pytesseract.image_to_string(Image.open(image_path))
+#     return text.strip()
+
+def check_end_of_book(text):
+    # Kiểm tra xem văn bản có phải là "Page X of Y" hay không
+    try:
+        # Kiểm tra xem văn bản có phải là "Page X of Y" hay không
+        if "Page" in text and "of" in text:
+            page_info = text.split(" ")
+            current_page = int(page_info[1])
+            total_pages = int(page_info[3])
+
+            if current_page == total_pages:
+                return True
+        return False
+    except Exception as e:
+        print(f"Lỗi khi kiểm tra cuối sách: {e}")
+        return False
 def find_text_in_screenshot():
     capture_screenshot()
     # Read the screenshot using OpenCV
     screenshot = cv2.imread('screenshot.png')
+
+    # cropped_image = screenshot[100, :]
+    # cv2.imwrite('cropped_screenshot.png', cropped_image)
+    # screenshot2 = cv2.imread('cropped_screenshot.png')
 
     # Convert the screenshot to grayscale for better text extraction
     gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
@@ -81,13 +106,15 @@ def find_text_in_screenshot():
     # cv2.waitKey(0)
 
     # Use pytesseract to extract text from the image
-    # text = pytesseract.image_to_string(gray)
+    bottom_cropped = gray[-100:, :]
 
-    text = pytesseract.image_to_string(gray, lang='eng')
+    text = pytesseract.image_to_string(bottom_cropped, lang='eng')
 
-    print("text fonund "+text)
+    result = check_end_of_book(text.strip())
+
+    print("text fonund "+text+" "+str(result))
     # Check if "100%" is present in the extracted text
-    return 'review this book on amazon' in text
+    return result
 def is_screen_off_text_100():
     # Implement the logic to check if the screen off text is 100%
     # You may need to run another adb command to get the current state
@@ -97,16 +124,30 @@ def is_screen_off_text_100():
 def swipe_read_until_100(timeout_seconds=3):
     start_time = time.time()
 
-    # while not is_screen_off_text_100():
-    while True:
-        time.sleep(3)  # Adjust the sleep time as needed
-        # Run the swipe_read function with your desired coordinates
-        swipe_read(500, heightScree/2, 100, heightScree/2)
-        time.sleep(1)  # Adjust the sleep time as needed
+    read=is_screen_off_text_100()
+    while not read:
+        if read:
+            break
+
+        else:
+            time.sleep(3)  # Adjust the sleep time as needed
+            # Run the swipe_read function with your desired coordinates
+            swipe_read(500, heightScree / 2, 100, heightScree / 2)
+            time.sleep(1)
+
+        read = is_screen_off_text_100()
 
 
+       # Adjust the sleep time as needed
+    print("read done")
+
+
+
+# C:\Program Files\Tesseract-OCR
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 # Example usage: Run the swipe_read_until_100 function
 # swipe_read_until_100(timeout_seconds=300)
 # find_text_in_screenshot()
 
-# swipe_read_until_100()
+swipe_read_until_100()
+
