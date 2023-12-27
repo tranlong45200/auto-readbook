@@ -2,6 +2,7 @@ import subprocess
 import time
 import re
 import cv2
+import numpy as np
 import pytesseract
 import subprocess
 from PIL import Image
@@ -42,6 +43,10 @@ def get_screen_size():
 
 # Example usage: Get and print the screen size
 
+def adb_click(x, y):
+    adb_command = f"adb shell input tap {x} {y}"
+    subprocess.run(adb_command, shell=True)
+
 def swipe_read(a_x, a_y, b_x, b_y, duration_ms=500):
     # Construct the adb command to simulate a swipe
     adb_command = f'adb shell input swipe {a_x} {a_y} {b_x} {b_y} {duration_ms}'
@@ -50,7 +55,7 @@ def swipe_read(a_x, a_y, b_x, b_y, duration_ms=500):
         # Execute the adb command
         subprocess.run(adb_command, shell=True, check=True)
         print(f"Swiped from ({a_x}, {a_y}) to ({b_x}, {b_y})")
-        time.sleep(1)  # Add a delay to ensure the swipe is completed
+        time.sleep(0.2)  # Add a delay to ensure the swipe is completed
     except subprocess.CalledProcessError as e:
         print(f"Error: {e}")
 # Example usage: Click at coordinates (100, 200)
@@ -112,7 +117,9 @@ def is_screen_off_text_100():
 def press_back_key():
     # Run the ADB command to simulate a "back" key press
     subprocess.run("adb shell input keyevent KEYCODE_BACK", shell=True, check=True)
-def swipe_read_until_100(timeout_seconds=3):
+
+import random
+def swipe_read_until_100(timeout_seconds=3,timeout_seconds2=3):
     start_time = time.time()
 
     read=is_screen_off_text_100()
@@ -123,7 +130,10 @@ def swipe_read_until_100(timeout_seconds=3):
             return
 
         else:
-            time.sleep(3)  # Adjust the sleep time as needed
+            tRandom=  random.uniform(timeout_seconds, timeout_seconds2)
+            print("wait .... "+str(tRandom))
+
+            time.sleep(tRandom)  # Adjust the sleep time as needed
             # Run the swipe_read function with your desired coordinates
             swipe_read(500, heightScree / 2, 100, heightScree / 2)
             time.sleep(1)
@@ -135,13 +145,55 @@ def swipe_read_until_100(timeout_seconds=3):
     print("read done")
 
 
+import sys
+import os
+import pytesseract
+
+# executable_path = os.path.dirname(sys.executable)
+# tesseract_path = os.path.join(executable_path, 'tesseract.exe')
+#
+# pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# pytesseract.pytesseract.tesseract_cmd = r'Tesseract-OCR\tesseract.exe'
 
-def readBook():
-    swipe_read_until_100()
-    time.sleep(3)
+# def readBook():
+#     swipe_read_until_100()
+#     time.sleep(3)
+#     press_back_key()
+
+
+# readBook()
+
+coordinates_list = [(140, 311), (343, 313), (561, 334), (138, 640),(336,633),(549,620),(135,953),(349,963),(546,962),]
+coordinates_list2 = [(135,953),(349,963),(546,962),]
+
+def readBook(coordinates,user_input,user_input2):
+    # Use coordinates
+    x, y = coordinates
+
+    adb_click(x, y)
+    time.sleep(2)
+    # Do something with x and y
+    swipe_read_until_100(user_input,user_input2)
+    time.sleep(2)
     press_back_key()
+    time.sleep(2)
 
 
-readBook()
+# Iterate through each set of coordinates and call readBook
+def run(user_input,user_input2):
+    for coordinates in coordinates_list:
+        readBook(coordinates,user_input,user_input2)
+
+    time.sleep(1)
+
+    swipe_read(340,940, 340, 517)
+
+    for coordinates in coordinates_list2:
+        readBook(coordinates, user_input,user_input2)
+
+
+
+
+# run(1)
