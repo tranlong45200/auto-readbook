@@ -24,9 +24,9 @@ def click_point(x, y):
 
 WidthScree=0
 heightScree=0
-def get_screen_size():
+def get_screen_size(device):
     # Run the adb command to get display information
-    adb_command = 'adb shell wm size'
+    adb_command = f'adb -s{device} shell wm size'
     result = subprocess.run(adb_command, shell=True, capture_output=True, text=True)
 
     # Parse the output to extract width and height
@@ -43,32 +43,28 @@ def get_screen_size():
 
 # Example usage: Get and print the screen size
 
-def adb_click(x, y):
-    adb_command = f"adb shell input tap {x} {y}"
+def adb_click(x, y,device):
+    adb_command = f"adb -s{device} shell input tap {x} {y}"
     subprocess.run(adb_command, shell=True)
 
-def swipe_read(a_x, a_y, b_x, b_y, duration_ms=500):
+def swipe_read(device,a_x, a_y, b_x, b_y, duration_ms=250):
     # Construct the adb command to simulate a swipe
-    adb_command = f'adb shell input swipe {a_x} {a_y} {b_x} {b_y} {duration_ms}'
+    adb_command = f'adb -s{device} shell input swipe {a_x} {a_y} {b_x} {b_y} {duration_ms}'
 
     try:
         # Execute the adb command
         subprocess.run(adb_command, shell=True, check=True)
         print(f"Swiped from ({a_x}, {a_y}) to ({b_x}, {b_y})")
-        time.sleep(0.2)  # Add a delay to ensure the swipe is completed
+        time.sleep(1)  # Add a delay to ensure the swipe is completed
     except subprocess.CalledProcessError as e:
         print(f"Error: {e}")
 # Example usage: Click at coordinates (100, 200)
 # click_point(100, 200)
 
-get_screen_size()
 
-
-
-
-def capture_screenshot():
+def capture_screenshot(device):
     # Run adb command to capture a screenshot
-    adb_command = 'adb exec-out screencap -p > screenshot.png'
+    adb_command = f'adb -s{device} exec-out screencap -p > screenshot_{device}.png'
     subprocess.run(adb_command, shell=True)
     print('screenshot saved successfully.')
 
@@ -87,45 +83,60 @@ def check_end_of_book(text):
     except Exception as e:
         print(f"Lỗi khi kiểm tra cuối sách: {e}")
         return False
-def find_text_in_screenshot():
-    capture_screenshot()
+def find_text_in_screenshot(device):
+    capture_screenshot(device)
     # Read the screenshot using OpenCV
-    screenshot = cv2.imread('screenshot.png')
+    screenshot = cv2.imread(f'screenshot_{device}.png')
 
     gray = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
 
-    cv2.imwrite("gray_image.png", gray)
+    cv2.imwrite(f"gray_image{device}.png", gray)
     # show_gray_image(gray)
     # cv2.waitKey(0)
 
     # Use pytesseract to extract text from the image
-    bottom_cropped = gray[-100:, :]
+    bottom_cropped = gray[-90:, :]
 
     text = pytesseract.image_to_string(bottom_cropped, lang='eng')
 
     result = check_end_of_book(text.strip())
 
+    if (result==False and str(text) != "" and not ("Page" in text) and not ("of" in text) ):
+        result = True
+
     print("text fonund:"+text+" "+str(result))
+
+
     # Check if "100%" is present in the extracted text
     return result
-def is_screen_off_text_100():
+
+def is_screen_off_text_100(device):
     # Implement the logic to check if the screen off text is 100%
     # You may need to run another adb command to get the current state
-    return find_text_in_screenshot()
+    return find_text_in_screenshot(device)
 
 
-def press_back_key():
+def press_back_key(device):
     # Run the ADB command to simulate a "back" key press
-    subprocess.run("adb shell input keyevent KEYCODE_BACK", shell=True, check=True)
+    adb_command = f"adb -s{device} shell input keyevent KEYCODE_BACK"
+    subprocess.run(adb_command, shell=True, check=True)
+    # subprocess.run("adb -s{device} shell input keyevent KEYCODE_BACK", shell=True, check=True)
 
 import random
-def swipe_read_until_100(timeout_seconds=3,timeout_seconds2=3):
+def swipe_read_until_100(device,timeout_seconds=3,timeout_seconds2=3):
     start_time = time.time()
 
-    read=is_screen_off_text_100()
+    read=is_screen_off_text_100(device)
+    # index0=0
     while not read:
+        # if read==0 :
+        #     index0+=1
+        # if index0==2:
+        #     print("read done1")
+        #
+        #     return
         if read:
-            print("read done")
+            print("read done2")
 
             return
 
@@ -135,14 +146,14 @@ def swipe_read_until_100(timeout_seconds=3,timeout_seconds2=3):
 
             time.sleep(tRandom)  # Adjust the sleep time as needed
             # Run the swipe_read function with your desired coordinates
-            swipe_read(500, heightScree / 2, 100, heightScree / 2)
+            swipe_read(device,500, heightScree / 2, 100, heightScree / 2)
             time.sleep(1)
 
-        read = is_screen_off_text_100()
+        read = is_screen_off_text_100(device)
 
        # Adjust the sleep time as needed
 
-    print("read done")
+    print("read done3")
 
 
 import sys
@@ -166,34 +177,39 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 # readBook()
 
 coordinates_list = [(140, 311), (343, 313), (561, 334), (138, 640),(336,633),(549,620),(135,953),(349,963),(546,962),]
-coordinates_list2 = [(135,953),(349,963),(546,962),]
+# coordinates_list2 = [(135,953),(349,963),(546,962),]
 
-def readBook(coordinates,user_input,user_input2):
+def readBook(coordinates,user_input,user_input2,device):
     # Use coordinates
     x, y = coordinates
 
-    adb_click(x, y)
-    time.sleep(2)
+    adb_click(x, y,device)
+    time.sleep(3)
     # Do something with x and y
-    swipe_read_until_100(user_input,user_input2)
+    swipe_read_until_100(device,user_input,user_input2)
     time.sleep(2)
-    press_back_key()
+    press_back_key(device)
     time.sleep(2)
 
 
 # Iterate through each set of coordinates and call readBook
-def run(user_input,user_input2):
-    for coordinates in coordinates_list:
-        readBook(coordinates,user_input,user_input2)
+def run(user_input,user_input2,device):
+    # get_screen_size(device)
 
     time.sleep(1)
 
-    swipe_read(340,940, 340, 517)
+    for coordinates in coordinates_list:
+        readBook(coordinates,user_input,user_input2,device)
 
-    for coordinates in coordinates_list2:
-        readBook(coordinates, user_input,user_input2)
+    time.sleep(2)
+
+    swipe_read(device,340,940, 340, 517)
+
+    # for coordinates in coordinates_list2:
+    #     readBook(coordinates, user_input,user_input2)
 
 
 
+# find_text_in_screenshot("127.0.0.1:21503")
 
 # run(1)
