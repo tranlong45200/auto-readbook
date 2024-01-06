@@ -9,6 +9,7 @@ from main import swipe_read_until_100, run
 import subprocess
 import asyncio
 
+
 def get_connected_devices():
     try:
         result = subprocess.run(['adb', 'devices', '-l'], capture_output=True, text=True, check=True)
@@ -25,6 +26,7 @@ def get_connected_devices():
 
 # Get the list of connected devices
 connected_devices = get_connected_devices()
+
 
 # Print the list of serial numbers
 # print("Connected Devices:")
@@ -70,7 +72,6 @@ class MyApplication(QWidget):
         self.setWindowTitle('auto read book')
         self.show()
 
-
     def on_button_click(self):
         # Handle the button click event
         user_input1 = self.edit_text1.text()
@@ -83,7 +84,7 @@ class MyApplication(QWidget):
 
         for device in connected_devices:
             print(device)
-            p1 = threading.Thread(target= run, args=(int(user_input1), int(user_input2), device))
+            p1 = threading.Thread(target=run, args=(int(user_input1), int(user_input2), device))
             p1.start()
 
 
